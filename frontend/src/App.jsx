@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Welcome from "./components/Welcome";
 import RegistrationForm from "./components/RegistrationForm";
 import Login from "./components/Login";
@@ -21,7 +21,8 @@ function App() {
       <Route path="/student-dashboard" element={<StudentDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
 
-
+      {/* Catch-all: redirect unknown paths to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
