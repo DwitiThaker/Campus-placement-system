@@ -25,7 +25,7 @@ export const extractResume = async (file) => {
  * @returns {Promise<object>} – { id, student_id, skills, education, projects, experience, certifications, summary, extracted_at }
  */
 export const getMyAIData = async () => {
-  const res = await API.get("/ai/my-data");
+  const res = await API.get("/my-data");
   return res.data;
 };
 
@@ -37,6 +37,6 @@ export const getMyAIData = async () => {
  * @returns {Promise<object>}
  */
 export const getStudentAIData = async (studentId) => {
-  const res = await API.get(`/ai/student/${studentId}`);
+  const res = await API.get(`/student/${studentId}`);
   return res.data;
 };
