@@ -670,6 +670,16 @@ export default function AdminDashboard() {
   const [placedStudents, setPlacedStudents] = useState([]);
   const [wallOfFame, setWallOfFame] = useState([]);
   const [greeting, setGreeting] = useState("");
+  const [showSubmitWallForm, setShowSubmitWallForm] = useState(false);
+  const [submitWallLoading, setSubmitWallLoading] = useState(false);
+  const [submitWallForm, setSubmitWallForm] = useState({
+    student_name: "",
+    company_name: "",
+    role: "",
+    ctc_lpa: "",
+    greeting: "",
+    student_photo_url: ""
+  });
 
   const fetchPlacedStudents = async () => { try { const res = await API.get("/placed"); setPlacedStudents(res.data); } catch (err) { console.error(err); } };
   const fetchWallOfFame = async () => { try { const res = await API.get("/wall-of-fame"); setWallOfFame(res.data); } catch (err) { console.error(err); } };
@@ -682,6 +692,25 @@ export default function AdminDashboard() {
       await API.post("/wall-of-fame/", { placed_student_id: student.placed_student_id, greeting });
       showToast("Added to Wall of Fame!", "success"); fetchPlacedStudents(); fetchWallOfFame(); setGreeting("");
     } catch (err) { showToast(err.response?.data?.detail || "Failed to add to Wall of Fame", "error"); }
+  };
+
+  const handleSubmitDirectToWall = async () => {
+    if (!submitWallForm.student_name.trim() || !submitWallForm.company_name.trim() || !submitWallForm.greeting.trim()) {
+      showToast("Please fill in all required fields", "error");
+      return;
+    }
+    setSubmitWallLoading(true);
+    try {
+      await API.post("/wall-of-fame/direct", submitWallForm);
+      showToast("Placement added to Wall of Fame!", "success");
+      setShowSubmitWallForm(false);
+      setSubmitWallForm({ student_name: "", company_name: "", role: "", ctc_lpa: "", greeting: "", student_photo_url: "" });
+      fetchWallOfFame();
+    } catch (err) {
+      showToast(err.response?.data?.detail || "Failed to add placement", "error");
+    } finally {
+      setSubmitWallLoading(false);
+    }
   };
 
   // ── ANNOUNCEMENTS ─────────────────────────────────────────────────────────
@@ -1492,7 +1521,12 @@ export default function AdminDashboard() {
 
         {/* ── PLACED STUDENTS ── */}
         <div id="sec-placed" style={{ scrollMarginTop: 90 }}>
-          <SectionTitle text="Placed Students" darkMode={darkMode} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <SectionTitle text="Placed Students" darkMode={darkMode} />
+            <Btn onClick={() => setShowSubmitWallForm(true)} color="indigo" style={{ padding: "8px 14px", fontSize: 12 }}>
+              <Icon d={IC.plus} size={14} color="#fff" /> Submit Placement
+            </Btn>
+          </div>
           <Card darkMode={darkMode} style={{ marginBottom: 20 }}>
             <TextareaField label="Greeting Message (Shared across additions)" darkMode={darkMode} placeholder="e.g. Congratulations Rahul! Your dedication led you to TCS." value={greeting} onChange={(e) => setGreeting(e.target.value)} style={{ minHeight: 70 }} />
           </Card>
@@ -1593,6 +1627,42 @@ export default function AdminDashboard() {
                   );
                 })
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── SUBMIT TO WALL OF FAME MODAL ── */}
+      <AnimatePresence>
+        {showSubmitWallForm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => !submitWallLoading && setShowSubmitWallForm(false)}>
+            <motion.div initial={{ scale: 0.92, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 20 }} onClick={(e) => e.stopPropagation()}
+              style={{ background: D.cardBg(darkMode), borderRadius: 22, padding: "28px", width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", border: `1px solid ${D.border(darkMode)}`, boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 18, color: D.textPri(darkMode) }}>🏆 Submit Placement</div>
+                  <div style={{ fontSize: 12, color: "#10b981", marginTop: 2 }}>Add a student to Wall of Fame</div>
+                </div>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => !submitWallLoading && setShowSubmitWallForm(false)} style={{ background: "rgba(239,68,68,0.1)", border: "none", borderRadius: 8, padding: "6px 10px", cursor: submitWallLoading ? "not-allowed" : "pointer" }}>
+                  <Icon d={IC.close} size={16} color="#ef4444" />
+                </motion.button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <InputField label="Student Name *" darkMode={darkMode} placeholder="e.g., Rahul Sharma" value={submitWallForm.student_name} onChange={(e) => setSubmitWallForm(prev => ({ ...prev, student_name: e.target.value }))} />
+                <InputField label="Company Name *" darkMode={darkMode} placeholder="e.g., TCS" value={submitWallForm.company_name} onChange={(e) => setSubmitWallForm(prev => ({ ...prev, company_name: e.target.value }))} />
+                <InputField label="Role" darkMode={darkMode} placeholder="e.g., Software Engineer" value={submitWallForm.role} onChange={(e) => setSubmitWallForm(prev => ({ ...prev, role: e.target.value }))} />
+                <InputField label="CTC (in LPA)" darkMode={darkMode} placeholder="e.g., 12.5" value={submitWallForm.ctc_lpa} onChange={(e) => setSubmitWallForm(prev => ({ ...prev, ctc_lpa: e.target.value }))} />
+                <InputField label="Student Photo URL" darkMode={darkMode} placeholder="https://example.com/photo.jpg" value={submitWallForm.student_photo_url} onChange={(e) => setSubmitWallForm(prev => ({ ...prev, student_photo_url: e.target.value }))} />
+                <TextareaField label="Greeting Message *" darkMode={darkMode} placeholder="e.g., Congratulations Rahul! Your hard work and dedication led to this success at TCS." value={submitWallForm.greeting} onChange={(e) => setSubmitWallForm(prev => ({ ...prev, greeting: e.target.value }))} style={{ minHeight: 80 }} />
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={() => !submitWallLoading && setShowSubmitWallForm(false)} disabled={submitWallLoading} style={{ background: "rgba(255,255,255,0.1)", border: `1px solid ${D.border(darkMode)}`, borderRadius: 10, padding: "10px 18px", color: D.textPri(darkMode), cursor: submitWallLoading ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600, opacity: submitWallLoading ? 0.5 : 1 }}>
+                    Cancel
+                  </motion.button>
+                  <Btn onClick={handleSubmitDirectToWall} color="green" loading={submitWallLoading}>
+                    <Icon d={IC.trophy} size={14} color="#fff" /> Submit to Wall
+                  </Btn>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
